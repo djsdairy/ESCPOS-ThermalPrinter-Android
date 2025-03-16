@@ -5,6 +5,8 @@ import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
+import androidx.annotation.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,17 +38,19 @@ public class RobustBluetoothPrintersConnections extends BluetoothConnections {
     /**
      * Get a list of bluetooth printers using RobustBluetoothConnection.
      *
-     * @return an array of RobustBluetoothConnection
+     * @return an array of BluetoothConnection
      */
     @SuppressLint("MissingPermission")
-    public RobustBluetoothConnection[] getList() {
+    @Nullable
+    @Override
+    public BluetoothConnection[] getList() {
         BluetoothConnection[] bluetoothDevicesList = super.getList();
 
         if (bluetoothDevicesList == null) {
             return null;
         }
 
-        List<RobustBluetoothConnection> printersList = new ArrayList<>();
+        List<BluetoothConnection> printersList = new ArrayList<>();
         
         for (BluetoothConnection bluetoothConnection : bluetoothDevicesList) {
             BluetoothDevice device = bluetoothConnection.getDevice();
@@ -65,18 +69,18 @@ public class RobustBluetoothPrintersConnections extends BluetoothConnections {
                 // Or device name contains "printer" (case insensitive)
                 if ((majDeviceCl == BluetoothClass.Device.Major.IMAGING && 
                      (deviceCl == 1664 || deviceCl == BluetoothClass.Device.Major.IMAGING)) || 
-                    device.getName().toLowerCase().contains("printer") ||
-                    device.getName().equals("InnerPrinter")) {
+                    (device.getName() != null && device.getName().toLowerCase().contains("printer")) ||
+                    (device.getName() != null && device.getName().equals("InnerPrinter"))) {
                     
                     Log.d(TAG, "Found printer device: " + device.getName());
                     printersList.add(new RobustBluetoothConnection(device, retryCount, connectionTimeout));
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Error checking device " + device.getName() + ": " + e.getMessage());
+                Log.e(TAG, "Error checking device: " + e.getMessage());
             }
         }
         
-        return printersList.toArray(new RobustBluetoothConnection[0]);
+        return printersList.toArray(new BluetoothConnection[0]);
     }
 
     /**
@@ -86,15 +90,17 @@ public class RobustBluetoothPrintersConnections extends BluetoothConnections {
      */
     public static RobustBluetoothConnection selectFirstPaired() {
         RobustBluetoothPrintersConnections printers = new RobustBluetoothPrintersConnections();
-        RobustBluetoothConnection[] bluetoothPrinters = printers.getList();
+        BluetoothConnection[] bluetoothPrinters = printers.getList();
 
         if (bluetoothPrinters != null && bluetoothPrinters.length > 0) {
             try {
-                Log.d(TAG, "Attempting to connect to first printer: " + bluetoothPrinters[0].getDevice().getName());
-                return bluetoothPrinters[0].connect();
+                BluetoothConnection printer = bluetoothPrinters[0];
+                if (printer instanceof RobustBluetoothConnection) {
+                    Log.d(TAG, "Attempting to connect to first printer: " + printer.getDevice().getName());
+                    return ((RobustBluetoothConnection) printer).connect();
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Error connecting to first printer: " + e.getMessage());
-                return null;
             }
         }
         
@@ -111,15 +117,17 @@ public class RobustBluetoothPrintersConnections extends BluetoothConnections {
      */
     public static RobustBluetoothConnection selectFirstPaired(int retryCount, int connectionTimeout) {
         RobustBluetoothPrintersConnections printers = new RobustBluetoothPrintersConnections(retryCount, connectionTimeout);
-        RobustBluetoothConnection[] bluetoothPrinters = printers.getList();
+        BluetoothConnection[] bluetoothPrinters = printers.getList();
 
         if (bluetoothPrinters != null && bluetoothPrinters.length > 0) {
             try {
-                Log.d(TAG, "Attempting to connect to first printer: " + bluetoothPrinters[0].getDevice().getName());
-                return bluetoothPrinters[0].connect();
+                BluetoothConnection printer = bluetoothPrinters[0];
+                if (printer instanceof RobustBluetoothConnection) {
+                    Log.d(TAG, "Attempting to connect to first printer: " + printer.getDevice().getName());
+                    return ((RobustBluetoothConnection) printer).connect();
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Error connecting to first printer: " + e.getMessage());
-                return null;
             }
         }
         
